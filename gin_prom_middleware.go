@@ -22,13 +22,13 @@ var (
 			Help:      "HTTP service uptime",
 		}, nil,
 	)
-	//uptimeSeconds = prometheus.NewGaugeVec(
-	//	prometheus.GaugeOpts{
-	//		Namespace: "process",
-	//		Name:      "uptime_seconds",
-	//		Help:      "HTTP service uptime seconds",
-	//	}, nil,
-	//)
+	uptimeSeconds = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "process",
+			Name:      "uptime_seconds",
+			Help:      "HTTP service uptime seconds",
+		}, nil,
+	)
 	reqCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespaces,
@@ -61,7 +61,7 @@ var (
 
 // init registers the prometheus metrics
 func init() {
-	prometheus.MustRegister(uptime, reqCount, reqDuration, reqSizeBytes, respSizeBytes)
+	prometheus.MustRegister(uptime, uptimeSeconds, reqCount, reqDuration, reqSizeBytes, respSizeBytes)
 	go recordUptime()
 }
 
@@ -69,7 +69,7 @@ func init() {
 func recordUptime() {
 	for range time.Tick(time.Second) {
 		uptime.WithLabelValues().Inc()
-		//uptimeSeconds.WithLabelValues().Inc()
+		uptimeSeconds.WithLabelValues().Inc()
 	}
 }
 
@@ -166,7 +166,7 @@ func RegisterMetricMonitor(enable bool, engine *gin.Engine) {
 		return
 	}
 	engine.Use(promMiddleware(nil))
-	engine.Any("/metrics", promHandler(promhttp.Handler()))
+	engine.GET("/metrics", promHandler(promhttp.Handler()))
 }
 
 // RegisterApiStatistics
@@ -176,7 +176,7 @@ func RegisterApiStatistics(enable bool, engine *gin.Engine) {
 	if !enable {
 		return
 	}
-	engine.Any("/getApiStatistics", func(ctx *gin.Context) {
+	engine.GET("/getApiStatistics", func(ctx *gin.Context) {
 		data := make([]map[string]string, 0)
 		for _, r := range engine.Routes() {
 			if r.Path == "/getApiStatistics" || r.Path == "/metrics" {
